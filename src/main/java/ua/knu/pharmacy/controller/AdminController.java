@@ -14,7 +14,7 @@ import ua.knu.pharmacy.service.AdminService;
 public class AdminController {
   private final AdminService service;
 
-  @PostMapping("/medicine")
+  @PostMapping("/medicines")
   public void addMedicine(@RequestBody AdminAddMedicineRequest request) {
     service.addMedicine(request);
   }

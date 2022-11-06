@@ -2,8 +2,11 @@ package ua.knu.pharmacy.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import ua.knu.pharmacy.dto.request.supplier.SupplierCreateSupplierRequest;
 import ua.knu.pharmacy.dto.response.supplier.SupplierViewMedicineResponse;
 import ua.knu.pharmacy.service.SupplierService;
 
@@ -15,8 +18,13 @@ import java.util.List;
 public class SupplierController {
   private final SupplierService service;
 
-  @GetMapping("/medicine")
+  @GetMapping("/medicines")
   public List<SupplierViewMedicineResponse> addMedicine() {
     return service.availableMedicines();
+  }
+
+  @PostMapping("/suppliers")
+  public void addSupplier(@RequestBody SupplierCreateSupplierRequest request) {
+    service.addSupplier(request);
   }
 }

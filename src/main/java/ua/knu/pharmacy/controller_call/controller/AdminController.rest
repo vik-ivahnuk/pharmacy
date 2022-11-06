@@ -1,4 +1,4 @@
-POST http://localhost:8080/admin/medicine
+POST http://localhost:8080/admin/medicines
 Content-Type: application/json
 
 {
