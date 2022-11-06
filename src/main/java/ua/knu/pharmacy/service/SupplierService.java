@@ -2,6 +2,7 @@ package ua.knu.pharmacy.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ua.knu.pharmacy.dto.request.supplier.SupplierCreateMedicineBatchItemRequest;
 import ua.knu.pharmacy.dto.request.supplier.SupplierCreateMedicineBatchRequest;
 import ua.knu.pharmacy.dto.response.supplier.SupplierViewMedicineResponse;
@@ -45,7 +46,7 @@ public class SupplierService {
         .toList();
   }
 
-  //  @Transactional
+  @Transactional
   public Long supply(SupplierCreateMedicineBatchRequest request) {
     Supplier supplier =
         supplierRepository

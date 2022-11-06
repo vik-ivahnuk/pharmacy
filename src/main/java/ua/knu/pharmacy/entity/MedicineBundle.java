@@ -36,6 +36,8 @@ public class MedicineBundle {
   @Column(nullable = false)
   private LocalDate expirationDate;
 
+  @Column private LocalDate saleDate;
+
   @ManyToOne(targetEntity = MedicineBatch.class)
   @JoinColumn(nullable = false)
   private MedicineBatch medicineBatch;
