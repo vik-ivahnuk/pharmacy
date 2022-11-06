@@ -1,1 +1,10 @@
-
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/pharmacy
+    username: vik
+    password: password
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
