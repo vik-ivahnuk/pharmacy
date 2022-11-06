@@ -2,11 +2,3 @@ GET http://localhost:8080/supplier/medicines
 Accept: application/json
 
 ###
-POST http://localhost:8080/supplier/suppliers
-Content-Type: application/json
-
-{
-  "name": "test supplier"
-}
-
-###
