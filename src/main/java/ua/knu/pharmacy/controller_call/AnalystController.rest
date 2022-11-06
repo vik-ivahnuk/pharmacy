@@ -1,0 +1,4 @@
+GET http://localhost:8080/analyst/analyse/2022-11-07
+Accept: application/json
+
+###
