@@ -2,12 +2,18 @@ package ua.knu.pharmacy.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.Medicine;
+import ua.knu.pharmacy.entity.MedicineBundle;
+import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.MedicineBundleRepository;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,12 +22,7 @@ public class UserService {
   private final MedicineBundleRepository medicineBundleRepository;
 
   public List<UserViewProductResponse> getAvailableProducts() {
-    return medicineBundleRepository.findAll().stream()
-        .filter(it -> !it.getExpirationDate().isBefore(LocalDate.now()))
-        .filter(it -> it.getSaleDate() == null)
-        .collect(Collectors.groupingBy(it -> it.getMedicine().getId()))
-        .values()
-        .stream()
+    return getAvailableProductsGroupingByMedicineId().values().stream()
         .map(
             value -> {
               Medicine medicine = value.get(0).getMedicine();
@@ -33,5 +34,30 @@ public class UserService {
                   .build();
             })
         .toList();
+  }
+
+  @Transactional
+  public void order(List<UserOrderRequest> requests) {
+    Map<Long, List<MedicineBundle>> availableProducts = getAvailableProductsGroupingByMedicineId();
+    for (UserOrderRequest r : requests) {
+      List<MedicineBundle> medicineBundles = availableProducts.get(r.getId());
+      if (medicineBundles == null) {
+        throw new NotFoundException("Can not find medicine with id = " + r.getId());
+      }
+      if (medicineBundles.size() < r.getCount()) {
+        throw new NotFoundException("Can not find enough medicine with id = " + r.getId());
+      }
+      medicineBundles.stream()
+          .sorted(Comparator.comparing(MedicineBundle::getExpirationDate))
+          .limit(r.getCount())
+          .forEach(x -> x.setSaleDate(LocalDate.now()));
+    }
+  }
+
+  private Map<Long, List<MedicineBundle>> getAvailableProductsGroupingByMedicineId() {
+    return medicineBundleRepository.findAll().stream()
+        .filter(it -> !it.getExpirationDate().isBefore(LocalDate.now()))
+        .filter(it -> it.getSaleDate() == null)
+        .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
   }
 }
