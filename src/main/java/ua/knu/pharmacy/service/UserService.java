@@ -4,13 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
+import ua.knu.pharmacy.dto.request.user.UserOrderProductRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.Medicine;
 import ua.knu.pharmacy.entity.MedicineBundle;
+import ua.knu.pharmacy.entity.Order;
 import ua.knu.pharmacy.entity.User;
 import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.MedicineBundleRepository;
+import ua.knu.pharmacy.repository.OrderRepository;
 import ua.knu.pharmacy.repository.UserRepository;
 
 import java.time.LocalDate;
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 public class UserService {
   private final UserRepository userRepository;
   private final MedicineBundleRepository medicineBundleRepository;
+  private final OrderRepository orderRepository;
 
   public Long registration(UserCreateUserRequest request) {
     return userRepository
@@ -47,9 +51,20 @@ public class UserService {
   }
 
   @Transactional
-  public void order(List<UserOrderRequest> requests) {
+  public void order(UserOrderRequest request) {
+    Order order =
+        orderRepository.save(
+            Order.builder()
+                .user(
+                    userRepository
+                        .findById(request.getUserId())
+                        .orElseThrow(
+                            () ->
+                                new NotFoundException("No user with id = " + request.getUserId())))
+                .date(LocalDate.now())
+                .build());
     Map<Long, List<MedicineBundle>> availableProducts = getAvailableProductsGroupingByMedicineId();
-    for (UserOrderRequest r : requests) {
+    for (UserOrderProductRequest r : request.getProducts()) {
       List<MedicineBundle> medicineBundles = availableProducts.get(r.getId());
       if (medicineBundles == null) {
         throw new NotFoundException("Can not find medicine with id = " + r.getId());
@@ -60,14 +75,14 @@ public class UserService {
       medicineBundles.stream()
           .sorted(Comparator.comparing(MedicineBundle::getExpirationDate))
           .limit(r.getCount())
-          .forEach(x -> x.setSaleDate(LocalDate.now()));
+          .forEach(x -> x.setOrder(order));
     }
   }
 
   private Map<Long, List<MedicineBundle>> getAvailableProductsGroupingByMedicineId() {
     return medicineBundleRepository.findAll().stream()
         .filter(it -> !it.getExpirationDate().isBefore(LocalDate.now()))
-        .filter(it -> it.getSaleDate() == null)
+        .filter(it -> it.getOrder() == null)
         .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
   }
 }

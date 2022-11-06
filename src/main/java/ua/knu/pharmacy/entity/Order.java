@@ -11,9 +11,12 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -21,25 +24,18 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MedicineBundle {
+@Table(name = "user_order")
+public class Order {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne(targetEntity = Medicine.class)
-  @JoinColumn(nullable = false)
-  private Medicine medicine;
+  @ManyToOne(targetEntity = User.class)
+  private User user;
 
   @Column(nullable = false)
-  private LocalDate manufactureDate;
+  private LocalDate date;
 
-  @Column(nullable = false)
-  private LocalDate expirationDate;
-
-  @ManyToOne(targetEntity = MedicineBatch.class)
-  @JoinColumn(nullable = false)
-  private MedicineBatch medicineBatch;
-
-  @ManyToOne(targetEntity = Order.class)
-  private Order order;
+  @OneToMany(mappedBy = "order")
+  private List<MedicineBundle> bundles = new ArrayList<>();
 }

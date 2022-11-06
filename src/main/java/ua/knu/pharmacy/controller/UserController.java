@@ -30,7 +30,7 @@ public class UserController {
   }
 
   @PostMapping("/medicines/order")
-  public void order(@RequestBody List<UserOrderRequest> requests) {
-    service.order(requests);
+  public void order(@RequestBody UserOrderRequest request) {
+    service.order(request);
   }
 }
