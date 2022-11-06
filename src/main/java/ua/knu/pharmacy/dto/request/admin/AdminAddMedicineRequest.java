@@ -1,18 +1,14 @@
 package ua.knu.pharmacy.dto.request.admin;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class AdminAddMedicineRequest {
-  String name;
-  String description;
-  BigDecimal price;
+  private String name;
+  private String description;
+  private BigDecimal price;
 }

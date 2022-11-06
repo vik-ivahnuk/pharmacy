@@ -2,3 +2,37 @@ GET http://localhost:8080/supplier/medicines
 Accept: application/json
 
 ###
+POST http://localhost:8080/supplier/supply
+Content-Type: application/json
+
+{
+  "supplierId": 1,
+  "items": [
+    {
+      "medicineId": 1,
+      "count": 2,
+      "manufactureDate": "2021-01-01",
+      "expirationDate": "2022-12-31"
+    },
+    {
+      "medicineId": 1,
+      "count": 10,
+      "manufactureDate": "2022-01-01",
+      "expirationDate": "2023-12-31"
+    },
+    {
+      "medicineId": 2,
+      "count": 5,
+      "manufactureDate": "2021-01-01",
+      "expirationDate": "2022-12-31"
+    },
+    {
+      "medicineId": 3,
+      "count": 3,
+      "manufactureDate": "2022-01-01",
+      "expirationDate": "2023-12-31"
+    }
+  ]
+}
+
+###

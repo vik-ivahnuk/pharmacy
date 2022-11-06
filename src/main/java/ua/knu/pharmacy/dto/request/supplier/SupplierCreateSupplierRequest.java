@@ -1,14 +1,10 @@
 package ua.knu.pharmacy.dto.request.supplier;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class SupplierCreateSupplierRequest {
-  String name;
+  private String name;
 }

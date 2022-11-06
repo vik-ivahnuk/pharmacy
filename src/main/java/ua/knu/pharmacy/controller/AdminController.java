@@ -16,12 +16,12 @@ public class AdminController {
   private final AdminService service;
 
   @PostMapping("/medicines")
-  public void addMedicine(@RequestBody AdminAddMedicineRequest request) {
-    service.addMedicine(request);
+  public Long addMedicine(@RequestBody AdminAddMedicineRequest request) {
+    return service.addMedicine(request);
   }
 
   @PostMapping("/suppliers")
-  public void addSupplier(@RequestBody SupplierCreateSupplierRequest request) {
-    service.addSupplier(request);
+  public Long addSupplier(@RequestBody SupplierCreateSupplierRequest request) {
+    return service.addSupplier(request);
   }
 }

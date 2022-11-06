@@ -17,18 +17,21 @@ public class AdminService {
   private final MedicineRepository medicineRepository;
   private final SupplierRepository supplierRepository;
 
-  public void addMedicine(AdminAddMedicineRequest request) {
-    medicineRepository.save(
-        Medicine.builder()
-            .name(request.getName())
-            .description(request.getDescription())
-            .price(request.getPrice())
-            .creationDate(LocalDate.now())
-            .build());
+  public Long addMedicine(AdminAddMedicineRequest request) {
+    return medicineRepository
+        .save(
+            Medicine.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .creationDate(LocalDate.now())
+                .build())
+        .getId();
   }
 
-  public void addSupplier(SupplierCreateSupplierRequest request) {
-    supplierRepository.save(
-        Supplier.builder().name(request.getName()).creationDate(LocalDate.now()).build());
+  public Long addSupplier(SupplierCreateSupplierRequest request) {
+    return supplierRepository
+        .save(Supplier.builder().name(request.getName()).creationDate(LocalDate.now()).build())
+        .getId();
   }
 }

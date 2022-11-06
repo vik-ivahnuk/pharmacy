@@ -2,9 +2,29 @@ POST http://localhost:8080/admin/medicines
 Content-Type: application/json
 
 {
-  "name": "test name",
-  "description": "test description",
-  "price": 33.3
+  "name": "Paracetamol",
+  "description": "An analgesic and antipyretic drug that is used to temporarily relieve mild-to-moderate pain and fever.",
+  "price": 15.3
+}
+
+###
+POST http://localhost:8080/admin/medicines
+Content-Type: application/json
+
+{
+  "name": "Aspirin",
+  "description": "A salicylate (sa-LIS-il-ate). It works by reducing substances in the body that cause pain, fever, and inflammation.",
+  "price": 3.14
+}
+
+###
+POST http://localhost:8080/admin/medicines
+Content-Type: application/json
+
+{
+  "name": "Ibuprofen",
+  "description": "A nonsteroidal anti-inflammatory drug (NSAID). It works by reducing hormones that cause inflammation and pain in the body.",
+  "price": 200.0
 }
 
 ###
@@ -12,7 +32,7 @@ POST http://localhost:8080/admin/suppliers
 Content-Type: application/json
 
 {
-  "name": "test supplier"
+  "name": "Pfizer"
 }
 
 ###
