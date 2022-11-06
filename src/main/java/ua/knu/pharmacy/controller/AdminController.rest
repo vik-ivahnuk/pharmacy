@@ -1,0 +1,10 @@
+POST http://localhost:8080/admin/medicine
+Content-Type: application/json
+
+{
+  "name": "test name",
+  "description": "test description",
+  "price": 33.3
+}
+
+###
