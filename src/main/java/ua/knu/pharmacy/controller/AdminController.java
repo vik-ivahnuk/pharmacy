@@ -12,10 +12,10 @@ import ua.knu.pharmacy.service.AdminService;
 @RequiredArgsConstructor
 @RequestMapping("/admin")
 public class AdminController {
-  private final AdminService adminService;
+  private final AdminService service;
 
   @PostMapping("/medicine")
   public void addMedicine(@RequestBody AdminAddMedicineRequest request) {
-    adminService.addMedicine(request);
+    service.addMedicine(request);
   }
 }
