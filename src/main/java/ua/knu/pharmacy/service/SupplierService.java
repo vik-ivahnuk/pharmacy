@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ua.knu.pharmacy.dto.request.supplier.SupplierCreateMedicineBatchItemRequest;
 import ua.knu.pharmacy.dto.request.supplier.SupplierCreateMedicineBatchRequest;
+import ua.knu.pharmacy.dto.request.supplier.SupplierCreateSupplierRequest;
 import ua.knu.pharmacy.dto.response.supplier.SupplierViewMedicineResponse;
 import ua.knu.pharmacy.entity.Medicine;
 import ua.knu.pharmacy.entity.MedicineBatch;
@@ -31,6 +32,12 @@ public class SupplierService {
   private final SupplierRepository supplierRepository;
   private final MedicineBatchRepository medicineBatchRepository;
   private final MedicineBundleRepository medicineBundleRepository;
+
+  public Long registration(SupplierCreateSupplierRequest request) {
+    return supplierRepository
+        .save(Supplier.builder().name(request.getName()).creationDate(LocalDate.now()).build())
+        .getId();
+  }
 
   public List<SupplierViewMedicineResponse> availableMedicines() {
     return medicineRepository.findAll().stream()

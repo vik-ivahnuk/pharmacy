@@ -1,3 +1,12 @@
+POST http://localhost:8080/supplier/registration
+Content-Type: application/json
+
+{
+  "name": "Pfizer"
+}
+
+###
+
 GET http://localhost:8080/supplier/medicines
 Accept: application/json
 

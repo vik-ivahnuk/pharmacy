@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.knu.pharmacy.dto.request.supplier.SupplierCreateMedicineBatchRequest;
+import ua.knu.pharmacy.dto.request.supplier.SupplierCreateSupplierRequest;
 import ua.knu.pharmacy.dto.response.supplier.SupplierViewMedicineResponse;
 import ua.knu.pharmacy.service.SupplierService;
 
@@ -17,6 +18,11 @@ import java.util.List;
 @RequestMapping("/supplier")
 public class SupplierController {
   private final SupplierService service;
+
+  @PostMapping("/registration")
+  public Long addSupplier(@RequestBody SupplierCreateSupplierRequest request) {
+    return service.registration(request);
+  }
 
   @GetMapping("/medicines")
   public List<SupplierViewMedicineResponse> addMedicine() {
