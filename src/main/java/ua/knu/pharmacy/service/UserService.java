@@ -6,14 +6,18 @@ import org.springframework.transaction.annotation.Transactional;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderProductRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
+import ua.knu.pharmacy.dto.request.user.UserReviewRequest;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.Medicine;
 import ua.knu.pharmacy.entity.MedicineBundle;
 import ua.knu.pharmacy.entity.Order;
+import ua.knu.pharmacy.entity.Review;
 import ua.knu.pharmacy.entity.User;
 import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.MedicineBundleRepository;
+import ua.knu.pharmacy.repository.MedicineRepository;
 import ua.knu.pharmacy.repository.OrderRepository;
+import ua.knu.pharmacy.repository.ReviewRepository;
 import ua.knu.pharmacy.repository.UserRepository;
 
 import java.time.LocalDate;
@@ -27,7 +31,9 @@ import java.util.stream.Collectors;
 public class UserService {
   private final UserRepository userRepository;
   private final MedicineBundleRepository medicineBundleRepository;
+  private final MedicineRepository medicineRepository;
   private final OrderRepository orderRepository;
+  private final ReviewRepository reviewRepository;
 
   public Long registration(UserCreateUserRequest request) {
     return userRepository
@@ -35,6 +41,7 @@ public class UserService {
         .getId();
   }
 
+  @Transactional
   public List<UserViewProductResponse> getAvailableProducts() {
     return getAvailableProductsGroupingByMedicineId().values().stream()
         .map(
@@ -44,6 +51,7 @@ public class UserService {
                   .id(medicine.getId())
                   .name(medicine.getName())
                   .description(medicine.getDescription())
+                  .reviews(medicine.getReviews().stream().map(Review::getText).toList())
                   .count(value.size())
                   .build();
             })
@@ -84,5 +92,27 @@ public class UserService {
         .filter(it -> !it.getExpirationDate().isBefore(LocalDate.now()))
         .filter(it -> it.getOrder() == null)
         .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
+  }
+
+  @Transactional
+  public Long review(UserReviewRequest request) {
+    User user =
+        userRepository
+            .findById(request.getUserId())
+            .orElseThrow(() -> new NotFoundException("No user with id = " + request.getUserId()));
+    Medicine medicine =
+        medicineRepository
+            .findById(request.getMedicineId())
+            .orElseThrow(
+                () -> new NotFoundException("No medicine with id = " + request.getUserId()));
+    return reviewRepository
+        .save(
+            Review.builder()
+                .user(user)
+                .medicine(medicine)
+                .text(request.getText())
+                .date(LocalDate.now())
+                .build())
+        .getId();
   }
 }

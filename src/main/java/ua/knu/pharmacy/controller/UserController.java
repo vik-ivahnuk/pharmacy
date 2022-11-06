@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
+import ua.knu.pharmacy.dto.request.user.UserReviewRequest;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.service.UserService;
 
@@ -32,5 +33,10 @@ public class UserController {
   @PostMapping("/medicines/order")
   public void order(@RequestBody UserOrderRequest request) {
     service.order(request);
+  }
+
+  @PostMapping("/medicines/review")
+  public Long review(@RequestBody UserReviewRequest request) {
+    return service.review(request);
   }
 }

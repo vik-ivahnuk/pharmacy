@@ -11,11 +11,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.persistence.ManyToOne;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
@@ -23,21 +20,20 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "user_client")
-public class User {
+public class Review {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(nullable = false, unique = true)
-  private String name;
+  @ManyToOne(targetEntity = User.class)
+  private User user;
+
+  @ManyToOne(targetEntity = Medicine.class)
+  private Medicine medicine;
 
   @Column(nullable = false)
-  private LocalDate creationDate;
+  private String text;
 
-  @OneToMany(mappedBy = "user")
-  private List<Review> reviews = new ArrayList<>();
-
-  @OneToMany(mappedBy = "user")
-  private List<Order> orders = new ArrayList<>();
+  @Column(nullable = false)
+  private LocalDate date;
 }
