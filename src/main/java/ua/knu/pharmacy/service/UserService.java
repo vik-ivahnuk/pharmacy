@@ -3,12 +3,15 @@ package ua.knu.pharmacy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.Medicine;
 import ua.knu.pharmacy.entity.MedicineBundle;
+import ua.knu.pharmacy.entity.User;
 import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.MedicineBundleRepository;
+import ua.knu.pharmacy.repository.UserRepository;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -19,7 +22,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+  private final UserRepository userRepository;
   private final MedicineBundleRepository medicineBundleRepository;
+
+  public Long registration(UserCreateUserRequest request) {
+    return userRepository
+        .save(User.builder().name(request.getName()).creationDate(LocalDate.now()).build())
+        .getId();
+  }
 
   public List<UserViewProductResponse> getAvailableProducts() {
     return getAvailableProductsGroupingByMedicineId().values().stream()
