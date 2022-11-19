@@ -13,4 +13,5 @@ public class SupplierCreateMedicineBatchItemRequest {
   private BigDecimal count;
   private LocalDate manufactureDate;
   private LocalDate expirationDate;
+  private BigDecimal pricePaidSupplier;
 }

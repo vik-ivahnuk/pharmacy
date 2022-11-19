@@ -28,63 +28,64 @@ import java.util.stream.IntStream;
 @Service
 @RequiredArgsConstructor
 public class SupplierService {
-  private final MedicineRepository medicineRepository;
-  private final SupplierRepository supplierRepository;
-  private final MedicineBatchRepository medicineBatchRepository;
-  private final MedicineBundleRepository medicineBundleRepository;
+    private final MedicineRepository medicineRepository;
+    private final SupplierRepository supplierRepository;
+    private final MedicineBatchRepository medicineBatchRepository;
+    private final MedicineBundleRepository medicineBundleRepository;
 
-  public Long registration(SupplierCreateSupplierRequest request) {
-    return supplierRepository
-        .save(Supplier.builder().name(request.getName()).creationDate(LocalDate.now()).build())
-        .getId();
-  }
+    public Long registration(SupplierCreateSupplierRequest request) {
+      return supplierRepository
+          .save(Supplier.builder().name(request.getName()).creationDate(LocalDate.now()).build())
+          .getId();
+    }
 
-  public List<SupplierViewMedicineResponse> availableMedicines() {
-    return medicineRepository.findAll().stream()
-        .map(
-            x ->
-                SupplierViewMedicineResponse.builder()
-                    .id(x.getId())
-                    .name(x.getName())
-                    .description(x.getDescription())
-                    .price(x.getPrice())
-                    .creationDate(x.getCreationDate())
-                    .build())
-        .toList();
-  }
+    public List<SupplierViewMedicineResponse> availableMedicines() {
+      return medicineRepository.findAll().stream()
+          .map(
+              x ->
+                  SupplierViewMedicineResponse.builder()
+                      .id(x.getId())
+                      .name(x.getName())
+                      .description(x.getDescription())
+                      .price(x.getPrice())
+                      .creationDate(x.getCreationDate())
+                      .build())
+          .toList();
+    }
 
-  @Transactional
-  public Long supply(SupplierCreateMedicineBatchRequest request) {
-    Supplier supplier =
-        supplierRepository
-            .findById(request.getSupplierId())
-            .orElseThrow(
-                () -> new NotFoundException("No supplier with id = " + request.getSupplierId()));
-    MedicineBatch batch =
-        medicineBatchRepository.save(
-            MedicineBatch.builder().supplier(supplier).supplyDate(LocalDate.now()).build());
-    Set<Long> requestMedicineIds =
-        request.getItems().stream()
-            .map(SupplierCreateMedicineBatchItemRequest::getMedicineId)
-            .collect(Collectors.toSet());
-    Map<Long, Medicine> medicineMap =
-        medicineRepository.findAllById(requestMedicineIds).stream()
-            .collect(Collectors.toMap(Medicine::getId, Function.identity()));
-    List<MedicineBundle> bundles =
-        request.getItems().stream()
-            .flatMap(
-                it ->
-                    IntStream.range(0, it.getCount().intValue())
-                        .mapToObj(
-                            x ->
-                                MedicineBundle.builder()
-                                    .medicine(medicineMap.get(it.getMedicineId()))
-                                    .manufactureDate(it.getManufactureDate())
-                                    .expirationDate(it.getExpirationDate())
-                                    .medicineBatch(batch)
-                                    .build()))
-            .toList();
-    medicineBundleRepository.saveAll(bundles);
-    return batch.getId();
-  }
+    @Transactional
+    public Long supply(SupplierCreateMedicineBatchRequest request) {
+      Supplier supplier =
+          supplierRepository
+              .findById(request.getSupplierId())
+              .orElseThrow(
+                  () -> new NotFoundException("No supplier with id = " + request.getSupplierId()));
+      MedicineBatch batch =
+          medicineBatchRepository.save(
+              MedicineBatch.builder().supplier(supplier).supplyDate(LocalDate.now()).build());
+      Set<Long> requestMedicineIds =
+          request.getItems().stream()
+              .map(SupplierCreateMedicineBatchItemRequest::getMedicineId)
+              .collect(Collectors.toSet());
+      Map<Long, Medicine> medicineMap =
+          medicineRepository.findAllById(requestMedicineIds).stream()
+              .collect(Collectors.toMap(Medicine::getId, Function.identity()));
+      List<MedicineBundle> bundles =
+          request.getItems().stream()
+              .flatMap(
+                  it ->
+                      IntStream.range(0, it.getCount().intValue())
+                          .mapToObj(
+                              x ->
+                                  MedicineBundle.builder()
+                                      .medicine(medicineMap.get(it.getMedicineId()))
+                                      .manufactureDate(it.getManufactureDate())
+                                      .expirationDate(it.getExpirationDate())
+                                      .pricePaidSupplier(it.getPricePaidSupplier())
+                                      .medicineBatch(batch)
+                                      .build()))
+              .toList();
+      medicineBundleRepository.saveAll(bundles);
+      return batch.getId();
+    }
 }

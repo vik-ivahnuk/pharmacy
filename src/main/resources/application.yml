@@ -1,9 +1,11 @@
+server:
+  port: 8081
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/pharmacy
+    url: jdbc:postgresql://localhost:5432/pharm_db
     username: vik
-    password: password
+    password: 1912
   jpa:
     open-in-view: false
     hibernate:
