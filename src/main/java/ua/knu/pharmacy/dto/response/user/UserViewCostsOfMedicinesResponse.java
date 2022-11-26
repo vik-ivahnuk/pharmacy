@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Value
 @Builder
-public class UserViewDistributionCostsOfMedicinesResponse {
+public class UserViewCostsOfMedicinesResponse {
     BigDecimal total;
     Map<String, BigDecimal> medicines;
 }

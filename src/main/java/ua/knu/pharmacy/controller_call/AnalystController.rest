@@ -1,4 +1,4 @@
-GET http://localhost:8081/analyst/analyse/analyse per day/2022-11-16
+GET http://localhost:8081/analyst/analyse/analyse per day/2022-11-21
 Accept: application/json
 
 ###
@@ -14,7 +14,7 @@ GET http://localhost:8081/analyst/analyse/butch/stocks
 Content-Type: application/json
 
 {
-  "butch": 1
+  "butch": 5
 }
 
 ###
@@ -22,8 +22,8 @@ GET http://localhost:8081/analyst/analyse/medicine/sales per day/
 Content-Type: application/json
 
 {
-  "date": "2022-11-17",
-  "medicine": 1
+  "date": "2022-11-20",
+  "medicine": 4
 }
 
 ###
@@ -31,8 +31,8 @@ GET http://localhost:8081/analyst/analyse/medicine/sales/
 Content-Type: application/json
 
 {
-  "start": "2022-11-01",
-  "end": "2022-11-02",
+  "start": "2022-11-16",
+  "end": "2022-11-20",
   "medicine": 1
 }
 
@@ -50,7 +50,7 @@ Content-Type: application/json
 
 {
   "start": "2022-11-16",
-  "end": "2022-11-18",
+  "end": "2022-11-20",
   "medicine": 1
 }
 
@@ -60,17 +60,36 @@ GET http://localhost:8081/analyst/analyse/medicine/distribution sales/
 Content-Type: application/json
 
 {
-  "start": "2022-11-01",
-  "end": "2022-11-17"
+  "start": "2022-11-18",
+  "end": "2022-11-20"
 }
 
 ###
-GET http://localhost:8081/analyst/analyse/medicine/profit and loss/
+GET http://localhost:8081/analyst/analyse/profit and loss/
 Content-Type: application/json
 
 {
   "start": "2022-11-01",
-  "end": "2022-11-18"
+  "end": "2022-11-19"
+}
+
+###
+GET http://localhost:8081/analyst/analyse/supplier/profit and loss/
+Content-Type: application/json
+
+{
+  "start": "2022-11-01",
+  "end": "2022-11-19",
+  "supplier": 3
+}
+
+###
+GET http://localhost:8081/analyst/analyse/supplier/statistics/
+Content-Type: application/json
+
+{
+  "start": "2022-11-15",
+  "end": "2022-11-19"
 }
 
 ###
@@ -79,8 +98,8 @@ Content-Type: application/json
 
 {
   "start": "2022-11-17",
-  "end": "2022-11-18"
+  "end": "2022-11-20"
 }
 
-###
+
 

@@ -6,7 +6,7 @@ POST http://localhost:8081/user/registration
 Content-Type: application/json
 
 {
-  "name": "my_user"
+  "name": "user3"
 }
 
 ###
@@ -18,7 +18,7 @@ Content-Type: application/json
   "products": [
     {
       "id": 1,
-      "count": 1
+      "count": 3
     }
   ]
 }
@@ -39,8 +39,19 @@ Content-Type: application/json
 
 {
   "start": "2022-11-16",
-  "end": "2022-11-18",
-  "userId": 1
+  "end": "2022-11-20",
+  "userId": 5
+}
+
+###
+
+GET http://localhost:8081/user/statistics/costs of medicines/
+Content-Type: application/json
+
+{
+  "start": "2022-11-15",
+  "end": "2022-11-20",
+  "userId": 5
 }
 
 ###

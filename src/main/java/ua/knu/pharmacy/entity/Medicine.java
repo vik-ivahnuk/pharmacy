@@ -32,4 +32,5 @@ public class Medicine {
 
   @OneToMany(mappedBy = "medicine")
   private List<Review> reviews = new ArrayList<>();
+
 }

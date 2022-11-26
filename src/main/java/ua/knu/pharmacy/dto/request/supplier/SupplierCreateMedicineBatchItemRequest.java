@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @Setter
 public class SupplierCreateMedicineBatchItemRequest {
   private Long medicineId;
-  private BigDecimal count;
+  private Integer count;
   private LocalDate manufactureDate;
   private LocalDate expirationDate;
   private BigDecimal pricePaidSupplier;

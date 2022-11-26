@@ -3,22 +3,18 @@ package ua.knu.pharmacy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.knu.pharmacy.dto.request.analyst.AnalystProfitAndLossSupplierRequest;
 import ua.knu.pharmacy.dto.response.analyst.*;
 import ua.knu.pharmacy.entity.Medicine;
 import ua.knu.pharmacy.entity.MedicineBundle;
 import ua.knu.pharmacy.entity.Order;
-import ua.knu.pharmacy.repository.MedicineBatchRepository;
-import ua.knu.pharmacy.repository.MedicineBundleRepository;
-import ua.knu.pharmacy.repository.MedicineRepository;
-import ua.knu.pharmacy.repository.OrderRepository;
+import ua.knu.pharmacy.entity.Supplier;
+import ua.knu.pharmacy.repository.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +27,8 @@ public class AnalystService {
     private final MedicineRepository medicineRepository;
 
     private final OrderRepository orderRepository;
+
+    private final SupplierRepository supplierRepository;
 
     @Transactional
     public AnalystViewResponse analysePerDay(LocalDate date) {
@@ -94,7 +92,6 @@ public class AnalystService {
         return AnalystStocksButchResponse.builder()
                 .stocks(viewMedicine(stocks, false))
                 .build();
-
     }
 
     private AnalystViewResponse.AnalystViewPartResponse viewMedicine(List<MedicineBundle> data, Boolean isSell) {
@@ -246,6 +243,45 @@ public class AnalystService {
     }
 
     @Transactional
+    public AnalystProfitAndLossResponse profitAndLossBySupplier(LocalDate start, LocalDate end, Long supplier){
+        return AnalystProfitAndLossResponse.builder()
+                .profit(orderRepository.findAll().stream()
+                        .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
+                                start.minusDays(1).isBefore(order.getDate()))
+                        .flatMap(order-> order.getBundles().stream())
+                        .filter(medicineBundle ->
+                                Objects.equals(medicineBundle.getMedicineBatch().getSupplier().getId(), supplier))
+                        .map(MedicineBundle::getPriceToSell)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .loss(medicineBundleRepository.findAll().stream()
+                        .filter(medicineBundle -> !medicineBundle.getExpirationDate().isBefore(LocalDate.now()))
+                        .filter(medicineBundle ->
+                                medicineBundle.getMedicineBatch().getSupplyDate().isBefore(end.plusDays(1))&&
+                                start.minusDays(1).isBefore(medicineBundle.getMedicineBatch().getSupplyDate())&&
+                                Objects.equals(medicineBundle.getMedicineBatch().getSupplier().getId(), supplier)
+                        )
+                        .map(MedicineBundle::getPricePaidSupplier)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                )
+                .build();
+    }
+
+    @Transactional
+    public AnalystStatisticsBySupplierResponse profitAndLossSupplierStatistics(LocalDate start, LocalDate end){
+        List<Supplier> suppliers =
+                supplierRepository.findAll().stream().toList();
+        Map<String, AnalystProfitAndLossResponse> result = new HashMap<String, AnalystProfitAndLossResponse>();
+        for(Supplier supplier: suppliers){
+            result.put(supplier.getName(),
+                    profitAndLossBySupplier(start, end, supplier.getId()));
+        }
+        return AnalystStatisticsBySupplierResponse.builder()
+                .profitAndLoss(result)
+                .build();
+
+    }
+
+    @Transactional
     public AnalystAverageCheckResponse averageCheck(LocalDate start, LocalDate end){
         List<Order> orders = orderRepository.findAll().stream()
                 .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
@@ -261,7 +297,6 @@ public class AnalystService {
                 .build();
     }
 
-    //public void
 
 
 }

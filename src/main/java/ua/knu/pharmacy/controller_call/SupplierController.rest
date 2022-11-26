@@ -2,7 +2,7 @@ POST http://localhost:8081/supplier/registration
 Content-Type: application/json
 
 {
-  "name": "Pfizer"
+  "name": "ALexion"
 }
 
 ###
@@ -15,56 +15,25 @@ POST http://localhost:8081/supplier/supply
 Content-Type: application/json
 
 {
-  "supplierId": 1,
+  "supplierId": 3,
   "items": [
     {
-      "medicineId": 1,
-      "count": 2,
-      "manufactureDate": "2021-01-01",
+      "medicineId": 4,
+      "count": 4,
+      "manufactureDate": "2021-10-01",
       "expirationDate": "2022-12-31",
-      "pricePaidSupplier": 1.2
+      "pricePaidSupplier": 23
     },
     {
       "medicineId": 1,
       "count": 10,
-      "manufactureDate": "2022-01-01",
-      "expirationDate": "2023-12-31",
-      "pricePaidSupplier": 1.2
-    },
-    {
-      "medicineId": 2,
-      "count": 5,
       "manufactureDate": "2021-01-01",
-      "expirationDate": "2022-12-31",
-      "pricePaidSupplier": 1.2
-    },
-    {
-      "medicineId": 3,
-      "count": 3,
-      "manufactureDate": "2022-01-01",
-      "expirationDate": "2023-12-31",
-      "pricePaidSupplier": 1.2
+      "expirationDate": "2022-11-29",
+      "pricePaidSupplier": 12
     }
+
   ]
 }
 
 ###
 
-###
-POST http://localhost:8081/supplier/supply
-Content-Type: application/json
-
-{
-  "supplierId": 1,
-  "items": [
-    {
-      "medicineId": 1,
-      "count": 2,
-      "manufactureDate": "2021-01-01",
-      "expirationDate": "2022-11-16",
-      "pricePaidSupplier": 1.2
-    }
-  ]
-}
-
-###

@@ -3,10 +3,7 @@ package ua.knu.pharmacy.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ua.knu.pharmacy.dto.request.TimeRequest;
-import ua.knu.pharmacy.dto.request.analyst.AnalystButchRequest;
-import ua.knu.pharmacy.dto.request.analyst.AnalystMedicineSalesPerDayRequest;
-import ua.knu.pharmacy.dto.request.analyst.AnalystMedicineSalesStatisticsRequest;
-import ua.knu.pharmacy.dto.request.analyst.AnalystSalesMedicineRequest;
+import ua.knu.pharmacy.dto.request.analyst.*;
 import ua.knu.pharmacy.dto.response.analyst.*;
 import ua.knu.pharmacy.service.AnalystService;
 
@@ -67,11 +64,25 @@ public class AnalystController {
     return service.DistributionSalesMedicine(start, end);
   }
 
-  @GetMapping("/analyse/medicine/profit and loss/")
+  @GetMapping("/analyse/profit and loss/")
   public AnalystProfitAndLossResponse analyseProfitAndLoss(@RequestBody TimeRequest request) {
     LocalDate start = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getStart(), LocalDate::from);
     LocalDate end = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getEnd(), LocalDate::from);
     return service.profitAndLossAnalyse(start, end);
+  }
+
+  @GetMapping("/analyse/supplier/profit and loss/")
+  public AnalystProfitAndLossResponse showProfitAndLossBySupplier(@RequestBody AnalystProfitAndLossSupplierRequest request) {
+    LocalDate start = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getStart(), LocalDate::from);
+    LocalDate end = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getEnd(), LocalDate::from);
+    return service.profitAndLossBySupplier(start, end , request.getSupplier());
+  }
+
+  @GetMapping("/analyse/supplier/statistics/")
+  public AnalystStatisticsBySupplierResponse showProfitAndLossBySupplier(@RequestBody TimeRequest request) {
+    LocalDate start = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getStart(), LocalDate::from);
+    LocalDate end = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getEnd(), LocalDate::from);
+    return service.profitAndLossSupplierStatistics(start, end);
   }
 
   @GetMapping("/analyse/average check/")

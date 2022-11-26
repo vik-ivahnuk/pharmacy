@@ -3,10 +3,12 @@ package ua.knu.pharmacy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ua.knu.pharmacy.dto.request.TimeRequest;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderProductRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.request.user.UserReviewRequest;
+import ua.knu.pharmacy.dto.response.user.UserViewCostsOfMedicinesResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewHistoryResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.*;
@@ -14,6 +16,7 @@ import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,73 +24,78 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-  private final UserRepository userRepository;
-  private final MedicineBundleRepository medicineBundleRepository;
-  private final MedicineRepository medicineRepository;
-  private final OrderRepository orderRepository;
-  private final ReviewRepository reviewRepository;
+      private final UserRepository userRepository;
+      private final MedicineBundleRepository medicineBundleRepository;
+      private final MedicineRepository medicineRepository;
+      private final SuppliedMedicineRepository suppliedMedicineRepository;
 
-  public Long registration(UserCreateUserRequest request) {
-    return userRepository
-        .save(User.builder().name(request.getName()).creationDate(LocalDate.now()).build())
-        .getId();
-  }
+      private final MedicineStockRepository medicineStockRepository;
+      private final OrderRepository orderRepository;
+      private final ReviewRepository reviewRepository;
 
-  @Transactional
-  public List<UserViewProductResponse> getAvailableProducts() {
-    return getAvailableProductsGroupingByMedicineId().values().stream()
-        .map(
-            value -> {
-              Medicine medicine = value.get(0).getMedicine();
-              return UserViewProductResponse.builder()
-                  .id(medicine.getId())
-                  .name(medicine.getName())
-                  .description(medicine.getDescription())
-                  .reviews(medicine.getReviews().stream().map(Review::getText).toList())
-                  .count(value.size())
-                  .build();
-            })
-        .toList();
-  }
+      public Long registration(UserCreateUserRequest request) {
+        return userRepository
+            .save(User.builder().name(request.getName()).creationDate(LocalDate.now()).build())
+            .getId();
+      }
 
-  @Transactional
-  public void order(UserOrderRequest request) {
-    Order order =
-        orderRepository.save(
-            Order.builder()
-                .user(
-                    userRepository
-                        .findById(request.getUserId())
-                        .orElseThrow(
-                            () ->
-                                new NotFoundException("No user with id = " + request.getUserId())))
-                .date(LocalDate.now())
-                .build());
-    Map<Long, List<MedicineBundle>> availableProducts = getAvailableProductsGroupingByMedicineId();
-    for (UserOrderProductRequest r : request.getProducts()) {
-        List<MedicineBundle> medicineBundles = availableProducts.get(r.getId());
-        if (medicineBundles == null) {
-          throw new NotFoundException("Can not find medicine with id = " + r.getId());
-        }
-        if (medicineBundles.size() < r.getCount()) {
-          throw new NotFoundException("Can not find enough medicine with id = " + r.getId());
-        }
-        medicineBundles.stream()
-            .sorted(Comparator.comparing(MedicineBundle::getExpirationDate))
-            .limit(r.getCount())
-            .forEach(x -> {
-                x.setOrder(order);
-                x.setPriceToSell(x.getMedicine().getPrice());
-            });
+      @Transactional
+      public List<UserViewProductResponse> getAvailableProducts() {
+          return getAvailableProductsGroupingByMedicineId().values().stream()
+                  .map(
+                        value -> {
+                              Medicine medicine = value.get(0).getMedicine();
+                              return UserViewProductResponse.builder()
+                                  .id(medicine.getId())
+                                  .name(medicine.getName())
+                                  .description(medicine.getDescription())
+                                  .price(medicine.getPrice())
+                                  .reviews(medicine.getReviews().stream().map(Review::getText).toList())
+                                  .count(value.stream().map(MedicineStock::getCount)
+                                          .reduce(0, Integer::sum))
+                                  .build();
+                        })
+                  .toList();
+      }
+
+    private Map<Long, List<MedicineStock>> getAvailableProductsGroupingByMedicineId() {
+        return medicineStockRepository.findAll().stream()
+                .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
     }
+
+  @Transactional
+  public Boolean order(UserOrderRequest request) {
+//    Order order =
+//        orderRepository.save(
+//            Order.builder()
+//                .user(
+//                    userRepository
+//                        .findById(request.getUserId())
+//                        .orElseThrow(
+//                            () -> new NotFoundException("No user with id = " + request.getUserId())))
+//                .date(LocalDate.now())
+//                .build());
+//    Map<Long, List<MedicineBundle>> availableProducts = getAvailableProductsGroupingByMedicineId();
+//    for (UserOrderProductRequest r : request.getProducts()) {
+//        List<MedicineBundle> medicineBundles = availableProducts.get(r.getId());
+//        if (medicineBundles == null) {
+//          throw new NotFoundException("Can not find medicine with id = " + r.getId());
+//        }
+//        if (medicineBundles.size() < r.getCount()) {
+//          throw new NotFoundException("Can not find enough medicine with id = " + r.getId());
+//        }
+//        medicineBundles.stream()
+//            .sorted(Comparator.comparing(MedicineBundle::getExpirationDate))
+//            .limit(r.getCount())
+//            .forEach(x -> {
+//                x.setOrder(order);
+//                x.setPriceToSell(x.getMedicine().getPrice());
+//            });
+//    }
+    return true;
   }
 
-  private Map<Long, List<MedicineBundle>> getAvailableProductsGroupingByMedicineId() {
-    return medicineBundleRepository.findAll().stream()
-        .filter(it -> !it.getExpirationDate().isBefore(LocalDate.now()))
-        .filter(it -> it.getOrder() == null)
-        .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
-  }
+
 
   @Transactional
   public Long review(UserReviewRequest request) {
@@ -175,5 +183,35 @@ public class UserService {
                 .build();
   }
 
+    @Transactional
+    public UserViewCostsOfMedicinesResponse costsOfMedicines(LocalDate start, LocalDate end, Long userId){
+      List<MedicineBundle> medicineBundles =
+                orderRepository.findAll().stream()
+                        .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
+                                start.minusDays(1).isBefore(order.getDate()))
+                        .filter(order-> Objects.equals(order.getUser().getId(), userId))
+                        .flatMap(order -> order.getBundles().stream())
+                        .toList();
+        BigDecimal total =medicineBundles.stream()
+                .map(MedicineBundle::getPriceToSell)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        Map<String, BigDecimal> result = new HashMap<String, BigDecimal>();
+        List<Medicine> medicines =
+                medicineRepository.findAll().stream().toList();
+        for(Medicine medicine : medicines){
+            BigDecimal percent =
+                medicineBundles.stream()
+                        .filter(medicineBundle -> medicineBundle.getMedicine() == medicine)
+                        .map(MedicineBundle::getPriceToSell)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            if(percent.equals(BigDecimal.ZERO))
+                continue;
+            result.put(medicine.getName(),percent);
+        }
+        return UserViewCostsOfMedicinesResponse.builder()
+                .total(total)
+                .medicines(result)
+                .build();
+    }
 }
