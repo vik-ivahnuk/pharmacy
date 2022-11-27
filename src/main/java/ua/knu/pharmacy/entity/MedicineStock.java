@@ -24,11 +24,15 @@ public class MedicineStock {
     @JoinColumn(nullable = false)
     private Medicine medicine;
 
-    @ManyToOne(targetEntity = Supply.class)
+    @ManyToOne(targetEntity = SuppliedMedicine.class)
     @JoinColumn(nullable = false)
-    private Supply supply;
+    private SuppliedMedicine supply;
 
     @Column(nullable = false)
     private Integer count;
+
+    public LocalDate getExpirationDate(){
+        return supply.getExpirationDate();
+    }
 
 }

@@ -6,7 +6,7 @@ POST http://localhost:8081/user/registration
 Content-Type: application/json
 
 {
-  "name": "user3"
+  "name": "my_user"
 }
 
 ###
@@ -17,8 +17,12 @@ Content-Type: application/json
   "userId": 1,
   "products": [
     {
+      "id": 4,
+      "count": 6
+    },
+    {
       "id": 1,
-      "count": 3
+      "count": 11
     }
   ]
 }

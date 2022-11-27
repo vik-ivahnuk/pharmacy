@@ -18,19 +18,24 @@ import ua.knu.pharmacy.repository.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
       private final UserRepository userRepository;
-      private final MedicineBundleRepository medicineBundleRepository;
       private final MedicineRepository medicineRepository;
-      private final SuppliedMedicineRepository suppliedMedicineRepository;
-
+      private final DailyReportMedicineRepository dailyReportMedicineRepository;
       private final MedicineStockRepository medicineStockRepository;
+      private final DailyProfitAndLossRepository dailyProfitAndLossRepository;
+      private final MonthProfitAndLossRepository monthProfitAndLossRepository;
+      private final MonthReportMedicineSalesRepository monthReportMedicineSalesRepository;
+      private final  DailyCountSalesRepository dailyCountSalesRepository;
       private final OrderRepository orderRepository;
+      private final OrderedMedicinesRepository orderedMedicinesRepository;
       private final ReviewRepository reviewRepository;
 
       public Long registration(UserCreateUserRequest request) {
@@ -60,67 +65,201 @@ public class UserService {
 
     private Map<Long, List<MedicineStock>> getAvailableProductsGroupingByMedicineId() {
         return medicineStockRepository.findAll().stream()
+                .filter( medicineStock -> Objects.equals(medicineStock.getDate(), LocalDate.now()))
                 .collect(Collectors.groupingBy(it -> it.getMedicine().getId()));
     }
 
-  @Transactional
-  public Boolean order(UserOrderRequest request) {
-//    Order order =
-//        orderRepository.save(
-//            Order.builder()
-//                .user(
-//                    userRepository
-//                        .findById(request.getUserId())
-//                        .orElseThrow(
-//                            () -> new NotFoundException("No user with id = " + request.getUserId())))
-//                .date(LocalDate.now())
-//                .build());
-//    Map<Long, List<MedicineBundle>> availableProducts = getAvailableProductsGroupingByMedicineId();
-//    for (UserOrderProductRequest r : request.getProducts()) {
-//        List<MedicineBundle> medicineBundles = availableProducts.get(r.getId());
-//        if (medicineBundles == null) {
-//          throw new NotFoundException("Can not find medicine with id = " + r.getId());
-//        }
-//        if (medicineBundles.size() < r.getCount()) {
-//          throw new NotFoundException("Can not find enough medicine with id = " + r.getId());
-//        }
-//        medicineBundles.stream()
-//            .sorted(Comparator.comparing(MedicineBundle::getExpirationDate))
-//            .limit(r.getCount())
-//            .forEach(x -> {
-//                x.setOrder(order);
-//                x.setPriceToSell(x.getMedicine().getPrice());
-//            });
-//    }
-    return true;
-  }
+    @Transactional
+    public Boolean order(UserOrderRequest request) {
+        Order order =
+           orderRepository.save(
+                Order.builder()
+                    .user(
+                        userRepository
+                            .findById(request.getUserId())
+                            .orElseThrow(
+                                () -> new NotFoundException("No user with id = " + request.getUserId())))
+                    .date(LocalDate.now())
+                    .build());
+        Map<Long, List<MedicineStock>> availableProducts = getAvailableProductsGroupingByMedicineId();
+        for (UserOrderProductRequest r : request.getProducts()) {
+            List<MedicineStock> medicineStockList = availableProducts.get(r.getId());
+            if (medicineStockList == null) {
+              throw new NotFoundException("Can not find medicine with id = " + r.getId());
+            } if (medicineStockList.stream().map(MedicineStock::getCount).reduce(0, Integer::sum) < r.getCount()) {
+              throw new NotFoundException("Can not find enough medicine with id = " + r.getId());
+            }
+        }
+
+        List<OrderedMedicines> orderedMedicines =
+                request.getProducts().stream()
+                        .map(
+                                value -> {
+                                    return OrderedMedicines.builder()
+                                            .medicine(medicineRepository.getReferenceById(value.getId()))
+                                            .order(order)
+                                            .price(medicineRepository.getReferenceById(value.getId()).getPrice())
+                                            .count(value.getCount())
+                                            .build();
+                                }
+                        )
+                        .toList();
+        orderedMedicinesRepository.saveAll(orderedMedicines);
+
+        List<Integer> index ;
+        BigDecimal profit = BigDecimal.ZERO;
+        for (UserOrderProductRequest r : request.getProducts()) {
+            Medicine medicine = medicineRepository.getReferenceById(r.getId());
+            List<MonthReportMedicineSales> monthReport = monthReportMedicineSalesRepository.findAll().stream()
+                    .filter(mr -> mr.getMedicine()==medicine)
+                    .filter(mr-> Objects.equals(mr.getMonth(), YearMonth.now()))
+                    .toList();
+
+            BigDecimal amount = BigDecimal.valueOf(r.getCount())
+                    .multiply(medicine.getPrice());
+            if(monthReport.size()==0){
+                monthReportMedicineSalesRepository.save(
+                        MonthReportMedicineSales.builder()
+                                .medicine(medicine)
+                                .count(r.getCount())
+                                .month(YearMonth.now())
+                                .amount(amount)
+                                .build()
+                );
+            } else {
+                monthReport.get(0).setAmount(monthReport.get(0).getAmount().add(amount));
+                monthReport.get(0).setCount(monthReport.get(0).getCount() + r.getCount());
+            }
+            profit =  profit.add(amount);
+            index = new ArrayList<>();
+            List<MedicineStock> medicineStockList = availableProducts.get(r.getId());
+            medicineStockList = medicineStockList.stream()
+                    .sorted(Comparator.comparing(MedicineStock::getExpirationDate)).toList();
+            for(MedicineStock m: medicineStockList){
+                List<DailyReportMedicine> reports =
+                        dailyReportMedicineRepository.findAll().stream()
+                                .filter(re-> Objects.equals(re.getDate(), LocalDate.now()))
+                                .filter(re->re.getMedicine()==m.getMedicine())
+                                .filter(re->re.getSupply()==m.getSupply().getSupply())
+                                .filter(DailyReportMedicine::getIsSale)
+                                .toList();
+                Integer count = 0;
+                Boolean is_break = false;
+                if(r.getCount()<m.getCount()){
+                    count = r.getCount();
+                    m.setCount(m.getCount() - r.getCount());
+                    is_break = true;
+                } else {
+                    count =  m.getCount();
+                    r.setCount(r.getCount()- m.getCount());
+                    index.add(medicineStockList.indexOf(m));
+                    if(r.getCount()==0)
+                        is_break = true;
+                }
+
+                if(reports.size()==0){
+                    dailyReportMedicineRepository.save(DailyReportMedicine.builder()
+                            .medicine(m.getMedicine())
+                            .amount(BigDecimal.valueOf(count).multiply(m.getMedicine().getPrice()))
+                            .date(LocalDate.now())
+                            .supply(m.getSupply().getSupply())
+                            .count(count)
+                            .isSale(true)
+                            .build());
+                } else {
+                    reports.get(0)
+                            .setCount(reports.get(0).getCount()+count);
+                    reports.get(0)
+                            .setAmount(reports.get(0).getAmount().add(BigDecimal.valueOf(count).multiply(m.getMedicine().getPrice())));
+                }
+                if(is_break)
+                    break;
+            }
+
+            for(Integer i: index){
+                medicineStockRepository.delete(medicineStockList.get(i));
+            }
+        }
+        updateProfit(LocalDate.now(), profit);
+        updateCountSales(LocalDate.now());
+        return true;
+    }
+
+    private void updateProfit(LocalDate date, BigDecimal amount){
+        List<DailyProfitAndLoss> daily  = dailyProfitAndLossRepository.findAll().stream()
+                .filter(d->Objects.equals(d.getDate(), date))
+                .toList();
+        YearMonth yearMonth = YearMonth.from(date);
+        List<MonthProfitAndLoss> month = monthProfitAndLossRepository.findAll().stream()
+                .filter(mo  -> Objects.equals(mo.getDate(), yearMonth))
+                .toList();
+        if(daily.size()==0) {
+            dailyProfitAndLossRepository.save(
+              DailyProfitAndLoss.builder()
+                      .profit(amount)
+                      .date(date)
+                      .loss(BigDecimal.ZERO)
+                      .build()
+            );
+        } else {
+            daily.get(0).setProfit(daily.get(0).getProfit().add(amount));
+        }
+
+        if (month.size()==0){
+            monthProfitAndLossRepository.save(
+                    MonthProfitAndLoss.builder()
+                            .profit(amount)
+                            .date(yearMonth)
+                            .loss(BigDecimal.ZERO)
+                            .build()
+            );
+        } else {
+            month.get(0).setProfit(month.get(0).getProfit().add(amount));
+        }
+
+    }
+
+    private  void updateCountSales(LocalDate date){
+        List<DailyCountSales> daily  = dailyCountSalesRepository.findAll().stream()
+                .filter(d->Objects.equals(d.getDate(), date))
+                .toList();
+        if(daily.size()==0) {
+            dailyCountSalesRepository.save(
+                    DailyCountSales.builder()
+                            .count(1)
+                            .date(date)
+                            .build()
+            );
+        } else {
+            daily.get(0).setCount(daily.get(0).getCount()+1);
+        }
+    }
 
 
+    @Transactional
+    public Long review(UserReviewRequest request) {
+        User user =
+            userRepository
+                .findById(request.getUserId())
+                .orElseThrow(() -> new NotFoundException("No user with id = " + request.getUserId()));
+        Medicine medicine =
+            medicineRepository
+                .findById(request.getMedicineId())
+                .orElseThrow(
+                    () -> new NotFoundException("No medicine with id = " + request.getUserId()));
+        return reviewRepository
+            .save(
+                Review.builder()
+                    .user(user)
+                    .medicine(medicine)
+                    .text(request.getText())
+                    .date(LocalDate.now())
+                    .build())
+            .getId();
+   }
 
-  @Transactional
-  public Long review(UserReviewRequest request) {
-    User user =
-        userRepository
-            .findById(request.getUserId())
-            .orElseThrow(() -> new NotFoundException("No user with id = " + request.getUserId()));
-    Medicine medicine =
-        medicineRepository
-            .findById(request.getMedicineId())
-            .orElseThrow(
-                () -> new NotFoundException("No medicine with id = " + request.getUserId()));
-    return reviewRepository
-        .save(
-            Review.builder()
-                .user(user)
-                .medicine(medicine)
-                .text(request.getText())
-                .date(LocalDate.now())
-                .build())
-        .getId();
-  }
-
-  @Transactional
-  public UserViewHistoryResponse showHistory(LocalDate start, LocalDate end, Long user){
+    @Transactional
+    public UserViewHistoryResponse showHistory(LocalDate start, LocalDate end, Long user){
         List<UserViewHistoryResponse.OrderMedicines> orders = new ArrayList<>();
         List<Medicine> medicines = medicineRepository.findAll().stream().toList();
         BigDecimal total = BigDecimal.ZERO;

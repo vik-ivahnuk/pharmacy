@@ -2,9 +2,9 @@ POST http://localhost:8081/admin/medicines
 Content-Type: application/json
 
 {
-  "name": "Tempalgin",
-  "description": "Analgesic-antipyretic of a combined composition",
-  "price": 110
+  "name": "Karvelis",
+  "description": "good ",
+  "price": 40
 }
 
 ###

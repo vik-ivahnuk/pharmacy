@@ -2,11 +2,10 @@ POST http://localhost:8081/supplier/registration
 Content-Type: application/json
 
 {
-  "name": "ALexion"
+  "name": "Phfizer"
 }
 
 ###
-
 GET http://localhost:8081/supplier/medicines
 Accept: application/json
 
@@ -19,16 +18,16 @@ Content-Type: application/json
   "items": [
     {
       "medicineId": 4,
-      "count": 4,
+      "count": 5,
       "manufactureDate": "2021-10-01",
-      "expirationDate": "2022-12-31",
+      "expirationDate": "2022-12-15",
       "pricePaidSupplier": 23
     },
     {
       "medicineId": 1,
       "count": 10,
-      "manufactureDate": "2021-01-01",
-      "expirationDate": "2022-11-29",
+      "manufactureDate": "2021-12-16",
+      "expirationDate": "2022-12-15",
       "pricePaidSupplier": 12
     }
 
