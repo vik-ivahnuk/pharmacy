@@ -4,8 +4,11 @@ package ua.knu.pharmacy.dto.response.analyst;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.Map;
+
 @Value
 @Builder
-public class AnalystStocksButchResponse {
-    AnalystViewResponse.AnalystViewPartResponse stocks;
+public class AnalystStocksSupplyResponse {
+
+    Map<String, Integer> stock;
 }

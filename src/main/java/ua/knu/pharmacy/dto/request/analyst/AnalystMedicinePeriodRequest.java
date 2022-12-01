@@ -5,7 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AnalystMedicineSalesPerDayRequest {
-    private String date;
+public class AnalystMedicinePeriodRequest {
+    private String start;
+    private String end;
     private Long medicine;
 }

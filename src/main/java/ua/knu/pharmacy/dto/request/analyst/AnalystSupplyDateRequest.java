@@ -6,6 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AnalystButchRequest {
-    private Long butch;
+public class AnalystSupplyDateRequest {
+    private String date;
+    private Long supply;
 }

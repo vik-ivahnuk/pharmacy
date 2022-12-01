@@ -3,12 +3,10 @@ package ua.knu.pharmacy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua.knu.pharmacy.dto.request.TimeRequest;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderProductRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.request.user.UserReviewRequest;
-import ua.knu.pharmacy.dto.response.user.UserViewCostsOfMedicinesResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewHistoryResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.entity.*;
@@ -16,11 +14,9 @@ import ua.knu.pharmacy.exception.NotFoundException;
 import ua.knu.pharmacy.repository.*;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.*;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -260,97 +256,37 @@ public class UserService {
 
     @Transactional
     public UserViewHistoryResponse showHistory(LocalDate start, LocalDate end, Long user){
-        List<UserViewHistoryResponse.OrderMedicines> orders = new ArrayList<>();
-        List<Medicine> medicines = medicineRepository.findAll().stream().toList();
+        List<Order> orderList = orderRepository.findAll().stream()
+                        .filter(om -> Objects.equals(om.getUser().getId(), user))
+                        .filter(om->!end.isBefore(om.getDate()) &&
+                                !om.getDate().isBefore(start))
+                        .toList();
         BigDecimal total = BigDecimal.ZERO;
-        while(start.isBefore(end.plusDays(1))){
-
-
-            LocalDate finalStart = start;
-            List<Order> medicineOrders =  orderRepository.findAll().stream()
-                    .filter(order -> order.getDate().isEqual(finalStart))
-                    .filter(order -> Objects.equals(order.getUser().getId(), user))
-                    .toList();
-
-            if(medicineOrders.size()==0){
-                start = start.plusDays(1);
-                continue;
+        List<UserViewHistoryResponse.OrderMedicines> orders = new ArrayList<>();
+        for(Order o: orderList){
+            List<UserViewHistoryResponse.OrderMedicines.OrderedMedicine> orderedMedicines = new ArrayList<>();
+            BigDecimal amount = BigDecimal.ZERO;
+            for(OrderedMedicines or:o.getOrderedMedicines()){
+                orderedMedicines.add(UserViewHistoryResponse.OrderMedicines.OrderedMedicine.builder()
+                                .price(or.getPrice())
+                                .count(or.getCount())
+                                .name(or.getMedicine().getName())
+                        .build());
+                amount = amount.add(or.getPrice().multiply(BigDecimal.valueOf(or.getCount())));
             }
-
-            for(Order order: medicineOrders){
-
-                List<MedicineBundle> medicineBundles = order.getBundles().stream().toList();
-                BigDecimal amount = medicineBundles.stream()
-                        .map(MedicineBundle::getPriceToSell)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                total = total.add(amount);
-                List<UserViewHistoryResponse.OrderMedicines.OrderedMedicine> orderedMedicines = new ArrayList<>();
-                for(Medicine medicine: medicines){
-                    String name = medicine.getName();
-                    List<MedicineBundle> bundles =
-                            medicineBundles.stream()
-                                    .filter(medicineBundle -> Objects.equals(medicineBundle.getMedicine().getId(),
-                                            medicine.getId()))
-                                    .toList();
-                    int count = bundles.size();
-                    if(count==0)
-                        continue;
-                    BigDecimal price = bundles.get(0).getPriceToSell();
-                    orderedMedicines.add(
-                            UserViewHistoryResponse.OrderMedicines.OrderedMedicine.builder()
-                                    .name(name)
-                                    .count(count)
-                                    .price(price)
-                                    .build()
-                    );
-                }
-
-                orders.add(UserViewHistoryResponse.OrderMedicines.builder()
-                                .date(start)
-                                .amount(amount)
-                                .medicines(orderedMedicines)
-                                .build());
-
-            }
-
-            start = start.plusDays(1);
+            orders.add(UserViewHistoryResponse.OrderMedicines.builder()
+                            .date(o.getDate())
+                            .medicines(orderedMedicines)
+                            .amount(amount)
+                    .build());
+            total = total.add(amount);
         }
-
         return UserViewHistoryResponse.builder()
+
+
                 .total(total)
                 .orders(orders)
                 .build();
   }
 
-    @Transactional
-    public UserViewCostsOfMedicinesResponse costsOfMedicines(LocalDate start, LocalDate end, Long userId){
-      List<MedicineBundle> medicineBundles =
-                orderRepository.findAll().stream()
-                        .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(order.getDate()))
-                        .filter(order-> Objects.equals(order.getUser().getId(), userId))
-                        .flatMap(order -> order.getBundles().stream())
-                        .toList();
-        BigDecimal total =medicineBundles.stream()
-                .map(MedicineBundle::getPriceToSell)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        Map<String, BigDecimal> result = new HashMap<String, BigDecimal>();
-        List<Medicine> medicines =
-                medicineRepository.findAll().stream().toList();
-        for(Medicine medicine : medicines){
-            BigDecimal percent =
-                medicineBundles.stream()
-                        .filter(medicineBundle -> medicineBundle.getMedicine() == medicine)
-                        .map(MedicineBundle::getPriceToSell)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            if(percent.equals(BigDecimal.ZERO))
-                continue;
-            result.put(medicine.getName(),percent);
-        }
-        return UserViewCostsOfMedicinesResponse.builder()
-                .total(total)
-                .medicines(result)
-                .build();
-    }
 }

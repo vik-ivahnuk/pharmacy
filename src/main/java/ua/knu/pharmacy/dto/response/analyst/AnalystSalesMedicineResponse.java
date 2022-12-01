@@ -9,14 +9,6 @@ import java.math.BigDecimal;
 @Value
 @Builder
 public class AnalystSalesMedicineResponse {
-
-    AnalystPartSalesMedicineResponse ordered;
-    AnalystPartSalesMedicineResponse expired;
-
-    @Value
-    @Builder
-    public static class AnalystPartSalesMedicineResponse{
-        BigDecimal amount;
-        Integer count;
-    }
+    BigDecimal amount;
+    Integer count;
 }

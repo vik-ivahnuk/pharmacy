@@ -12,8 +12,8 @@ POST http://localhost:8081/admin/medicines/change price
 Content-Type: application/json
 
 {
-  "medicine": 1,
-  "price": 120
+  "medicine": 2,
+  "price": 220
 }
 
 ###

@@ -43,19 +43,9 @@ Content-Type: application/json
 
 {
   "start": "2022-11-16",
-  "end": "2022-11-20",
-  "userId": 5
+  "end": "2022-12-02",
+  "userId": 1
 }
 
 ###
 
-GET http://localhost:8081/user/statistics/costs of medicines/
-Content-Type: application/json
-
-{
-  "start": "2022-11-15",
-  "end": "2022-11-20",
-  "userId": 5
-}
-
-###

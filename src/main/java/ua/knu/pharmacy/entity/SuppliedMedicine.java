@@ -38,4 +38,8 @@ public class SuppliedMedicine {
     @Column(nullable = false)
     private BigDecimal price;
 
+    public BigDecimal getAmount(){
+        return price.multiply(BigDecimal.valueOf(count));
+    }
+
 }

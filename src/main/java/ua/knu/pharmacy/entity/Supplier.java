@@ -24,6 +24,4 @@ public class Supplier {
   @Column(nullable = false)
   private LocalDate creationDate;
 
-  @OneToMany(mappedBy = "supplier")
-  private List<MedicineBatch> batches = new ArrayList<>();
 }

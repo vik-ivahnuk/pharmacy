@@ -3,170 +3,259 @@ package ua.knu.pharmacy.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ua.knu.pharmacy.dto.request.analyst.AnalystProfitAndLossSupplierRequest;
 import ua.knu.pharmacy.dto.response.analyst.*;
-import ua.knu.pharmacy.entity.Medicine;
-import ua.knu.pharmacy.entity.MedicineBundle;
-import ua.knu.pharmacy.entity.Order;
-import ua.knu.pharmacy.entity.Supplier;
+import ua.knu.pharmacy.entity.*;
 import ua.knu.pharmacy.repository.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AnalystService {
-    private final MedicineBundleRepository medicineBundleRepository;
-
-    private final MedicineBatchRepository medicineBatchRepository;
-
     private final MedicineRepository medicineRepository;
-
     private final OrderRepository orderRepository;
-
     private final SupplierRepository supplierRepository;
-
-    @Transactional
-    public AnalystViewResponse analysePerDay(LocalDate date) {
-      List<MedicineBundle> supplied =
-          medicineBatchRepository.findAll().stream()
-              .filter(batch -> batch.getSupplyDate().isEqual(date))
-              .flatMap(batch -> batch.getBundles().stream())
-              .toList();
-      List<MedicineBundle> ordered =
-          medicineBundleRepository.findAll().stream()
-              .filter(bundle -> bundle.getOrder() != null)
-              .filter(bundle -> bundle.getOrder().getDate().isEqual(date))
-              .toList();
-      List<MedicineBundle> expired =
-          medicineBundleRepository.findAll().stream()
-              .filter(bundle -> bundle.getOrder() == null)
-              .filter(bundle -> bundle.getExpirationDate().isEqual(date))
-              .toList();
-      return AnalystViewResponse.builder()
-          .supplied(viewMedicine(supplied, false))
-          .ordered(viewMedicine(ordered, true))
-          .expired(viewMedicine(expired, false))
-          .build();
-    }
+    private final DailyReportMedicineRepository dailyReportMedicineRepository;
+    private final MedicineStockRepository medicineStockRepository;
+    private final DailyProfitAndLossRepository dailyProfitAndLossRepository;
+    private final MonthProfitAndLossRepository monthProfitAndLossRepository;
+    private final MonthReportMedicineSalesRepository monthReportMedicineSalesRepository;
+    private final  DailyCountSalesRepository dailyCountSalesRepository;
+    private final SuppliedMedicineRepository suppliedMedicineRepository;
 
 
     @Transactional
-    public AnalystViewResponse salesOfButch(Long Butch){
+    public AnalystStocksSupplyResponse stocksSupply(Long supply, LocalDate date){
 
-        List<MedicineBundle> supplied =
-                medicineBundleRepository.findAll().stream()
-                        .filter(bundle -> Objects.equals(bundle.getMedicineBatch().getId(), Butch))
-                        .toList();
-
-        List<MedicineBundle> ordered =
-                medicineBundleRepository.findAll().stream()
-                        .filter(bundle -> bundle.getOrder() != null)
-                        .filter(bundle -> Objects.equals(bundle.getMedicineBatch().getId(), Butch))
-                        .toList();
-        List<MedicineBundle> expired =
-                medicineBundleRepository.findAll().stream()
-                        .filter(bundle -> bundle.getOrder() == null)
-                        .filter(bundle -> bundle.getExpirationDate().isBefore(LocalDate.now()))
-                        .toList();
-
-        return AnalystViewResponse.builder()
-                .supplied(viewMedicine(supplied, false))
-                .ordered(viewMedicine(ordered, true))
-                .expired(viewMedicine(expired, false))
-                .build();
-    }
-
-    @Transactional
-    public AnalystStocksButchResponse stocksButch(Long Butch){
-        List<MedicineBundle> stocks =
-                medicineBundleRepository.findAll().stream()
-                        .filter(bundle -> bundle.getOrder() == null)
-                        .filter(bundle -> !bundle.getExpirationDate().isBefore(LocalDate.now()))
-                        .filter(bundle -> Objects.equals(bundle.getMedicineBatch().getId(), Butch))
-                        .toList();
-        return AnalystStocksButchResponse.builder()
-                .stocks(viewMedicine(stocks, false))
-                .build();
-    }
-
-    private AnalystViewResponse.AnalystViewPartResponse viewMedicine(List<MedicineBundle> data, Boolean isSell) {
-
-        return AnalystViewResponse.AnalystViewPartResponse.builder()
-                .amount(
-                        data.stream()
-                                .map(isSell ? MedicineBundle::getPriceToSell :
-                                        MedicineBundle::getPricePaidSupplier)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add))
-                .items(
-                        data.stream()
+        return AnalystStocksSupplyResponse.builder()
+                .stock(
+                        medicineStockRepository.findAll().stream()
+                                .filter(m -> Objects.equals(m.getSupply().getSupply().getId(),supply))
+                                .filter(m -> Objects.equals(m.getDate(), date))
+                                .toList().stream()
                                 .collect(Collectors.groupingBy(it1 -> it1.getMedicine().getName()))
                                 .entrySet()
                                 .stream()
-                                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())))
+                                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
+                                        .map(MedicineStock::getCount)
+                                        .reduce(0,Integer::sum)))
+                )
                 .build();
     }
 
     @Transactional
-    public AnalystSalesMedicineResponse salesMedicines(Long medicine, LocalDate start, LocalDate end){
-
-
-        List<MedicineBundle> ordered =
-                medicineBundleRepository.findAll().stream()
-                        .filter(medicineBundle1 -> Objects.equals(medicineBundle1.getMedicine().getId(), medicine))
-                        .filter(medicineBundle -> medicineBundle.getOrder() != null)
-                        .filter(medicineBundle -> medicineBundle.getOrder().getDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(medicineBundle.getOrder().getDate()))
+    public AnalystViewResponse salesOfSupplyByDay(Long supply, LocalDate date){
+        List<DailyReportMedicine> ordered  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->Objects.equals(o.getDate(), date) && o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<DailyReportMedicine> expired  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->Objects.equals(o.getDate(), date) && !o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<SuppliedMedicine> supplied =
+                suppliedMedicineRepository.findAll().stream()
+                        .filter(s->Objects.equals(s.getSupply().getSupplyDate(), date))
+                        .filter(s->Objects.equals(s.getSupply().getId(), supply))
                         .toList();
 
-        List<MedicineBundle> expired =
-                medicineBundleRepository.findAll().stream()
-                        .filter(medicineBundle1 -> Objects.equals(medicineBundle1.getMedicine().getId(), medicine))
-                        .filter(medicineBundle -> medicineBundle.getOrder() == null)
-                        .filter(medicineBundle -> medicineBundle.getExpirationDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(medicineBundle.getExpirationDate()))
+
+        return AnalystViewResponse.builder()
+                .supplied(calculateSupplied(supplied))
+                .ordered(calculateSales(ordered))
+                .expired(calculateSales(expired))
+                .build();
+    }
+
+    @Transactional
+    public AnalystViewResponse salesOfSupplyByPeriod(Long supply, LocalDate start, LocalDate end){
+        List<DailyReportMedicine> ordered  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->!end.isBefore(o.getDate()) &&
+                                !o.getDate().isBefore(start) &&
+                                o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<DailyReportMedicine> expired  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->!end.isBefore(o.getDate()) &&
+                                !o.getDate().isBefore(start) &&
+                                !o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<SuppliedMedicine> supplied =
+                suppliedMedicineRepository.findAll().stream()
+                        .filter(s->!end.isBefore(s.getSupply().getSupplyDate()) &&
+                                !s.getSupply().getSupplyDate().isBefore(start) )
+                        .filter(s->Objects.equals(s.getSupply().getId(), supply))
                         .toList();
 
+
+        return AnalystViewResponse.builder()
+                .supplied(calculateSupplied(supplied))
+                .ordered(calculateSales(ordered))
+                .expired(calculateSales(expired))
+                .build();
+    }
+
+    @Transactional
+    public AnalystViewResponse salesOfSupplyByMonth(Long supply, YearMonth date){
+        List<DailyReportMedicine> ordered  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->Objects.equals(YearMonth.from(o.getDate()), date) && o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<DailyReportMedicine> expired  =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(o->Objects.equals(YearMonth.from(o.getDate()), date) && !o.getIsSale())
+                        .filter(o->Objects.equals(o.getSupply().getId(), supply))
+                        .toList();
+        List<SuppliedMedicine> supplied =
+                suppliedMedicineRepository.findAll().stream()
+                        .filter(s->Objects.equals(YearMonth.from(s.getSupply().getSupplyDate()), date))
+                        .filter(s->Objects.equals(s.getSupply().getId(), supply))
+                        .toList();
+
+
+        return AnalystViewResponse.builder()
+                .supplied(calculateSupplied(supplied))
+                .ordered(calculateSales(ordered))
+                .expired(calculateSales(expired))
+                .build();
+    }
+
+    private AnalystViewResponse.AnalystViewPartResponse calculateSales(List<DailyReportMedicine> list){
+        return AnalystViewResponse.AnalystViewPartResponse.builder()
+                .amount(
+                        list.stream()
+                                .map(DailyReportMedicine::getAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                )
+                .items(
+                    list.stream()
+                    .collect(Collectors.groupingBy(it1 -> it1.getMedicine().getName()))
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
+                            .map(DailyReportMedicine::getCount)
+                            .reduce(0,Integer::sum)))
+                )
+                .build();
+    }
+
+    private AnalystViewResponse.AnalystViewPartResponse calculateSupplied(List<SuppliedMedicine> list){
+        return AnalystViewResponse.AnalystViewPartResponse.builder()
+                .amount(
+                        list.stream()
+                                .map(SuppliedMedicine::getAmount)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                )
+                .items(
+                        list.stream()
+                                .collect(Collectors.groupingBy(it1 -> it1.getMedicine().getName()))
+                                .entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream()
+                                        .map(SuppliedMedicine::getCount)
+                                        .reduce(0, Integer::sum)))
+                )
+                .build();
+    }
+
+    //********************** medicine **********************//
+    @Transactional
+    public AnalystMedicineSalesStatisticsResponse.SalesPerDay medicineSalesPerDay(LocalDate date, Long medicine){
+
+        List<DailyReportMedicine> list =
+                dailyReportMedicineRepository.findAll().stream()
+                        .filter(l -> Objects.equals(l.getDate(),date) && l.getIsSale())
+                        .filter(l-> Objects.equals(l.getMedicine().getId(), medicine))
+                        .toList();
+
+        return AnalystMedicineSalesStatisticsResponse.SalesPerDay.builder()
+                .date(date)
+                .count(list.stream()
+                        .map(DailyReportMedicine::getCount)
+                        .reduce(0,Integer::sum))
+                .amount(list.stream()
+                        .map(DailyReportMedicine::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .build();
+    }
+
+    @Transactional
+    public AnalystSalesMedicineResponse salesMedicinesByPeriod(Long medicine, LocalDate start, LocalDate end){
+            List<DailyReportMedicine> list =
+                    dailyReportMedicineRepository.findAll().stream()
+                            .filter(l->
+                                    !end.isBefore(l.getDate()) &&
+                                            !l.getDate().isBefore(start) &&
+                                            l.getIsSale())
+                            .filter(l-> Objects.equals(l.getMedicine().getId(), medicine))
+                            .toList();
+
+            return AnalystSalesMedicineResponse.builder()
+                    .count(list.stream()
+                            .map(DailyReportMedicine::getCount)
+                            .reduce(0,Integer::sum))
+                    .amount(list.stream()
+                            .map(DailyReportMedicine::getAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add))
+                    .build();
+    }
+
+    @Transactional
+    public AnalystSalesMedicineResponse salesMedicinesByMonth(Long medicine, YearMonth date){
+        List<MonthReportMedicineSales> reportMedicineSales =
+                monthReportMedicineSalesRepository.findAll().stream()
+                        .filter(m->Objects.equals(m.getMonth(),date)&&
+                                Objects.equals(m.getMedicine().getId(), medicine))
+                        .toList();
+        if (reportMedicineSales.size()==0)
+            return AnalystSalesMedicineResponse.builder()
+                    .amount(BigDecimal.ZERO)
+                    .count(0)
+                    .build();
         return AnalystSalesMedicineResponse.builder()
-                .ordered(viewMedicine2(ordered,true))
-                .expired(viewMedicine2(expired,false))
+                .amount(reportMedicineSales.get(0).getAmount())
+                .count(reportMedicineSales.get(0).getCount())
                 .build();
     }
 
     @Transactional
-    public AnalystStockMedicineResponse stockMedicines(Long medicine){
-
-
-        List<MedicineBundle> stock =
-                medicineBundleRepository.findAll().stream()
-                        .filter(medicineBundle1 -> Objects.equals(medicineBundle1.getMedicine().getId(), medicine))
-                        .filter(medicineBundle -> medicineBundle.getOrder() == null)
-                        .filter(medicineBundle -> !medicineBundle.getExpirationDate().isBefore(LocalDate.now()))
+    public AnalystStockMedicineResponse stockMedicines(Long medicine, LocalDate date){
+        List<MedicineStock> stocks =
+                medicineStockRepository.findAll().stream()
+                        .filter(m->Objects.equals(m.getDate(), date))
+                        .filter(m-> Objects.equals(m.getMedicine().getId(), medicine))
                         .toList();
 
         return AnalystStockMedicineResponse.builder()
-                .stock(viewMedicine2(stock,false))
+                .stock(
+                        AnalystSalesMedicineResponse.builder()
+                                .amount(stocks.stream()
+                                        .map(MedicineStock::getAmount)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                                .count(stocks.stream()
+                                        .map(MedicineStock::getCount)
+                                        .reduce(0, Integer::sum)
+                                )
+                                .build()
+                )
                 .build();
     }
 
-    private AnalystSalesMedicineResponse.AnalystPartSalesMedicineResponse viewMedicine2(List<MedicineBundle> data, Boolean isSell) {
-
-        return AnalystSalesMedicineResponse.AnalystPartSalesMedicineResponse.builder()
-                .amount( data.stream()
-                        .map(isSell ? MedicineBundle::getPriceToSell :
-                                MedicineBundle::getPricePaidSupplier)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add))
-                .count(data.size())
-                .build();
-    }
 
     @Transactional
     public AnalystMedicineSalesStatisticsResponse medicineSalesStatistics(LocalDate start, LocalDate end, Long medicine){
-        List<AnalystMedicineSalesStatisticsResponse.salesPerDay> sales = new ArrayList<>();
+        List<AnalystMedicineSalesStatisticsResponse.SalesPerDay> sales = new ArrayList<>();
         while(start.isBefore(end.plusDays(1))){
             sales.add(medicineSalesPerDay(start, medicine));
             start = start.plusDays(1);
@@ -176,25 +265,6 @@ public class AnalystService {
                 .build();
     }
 
-    @Transactional
-    public AnalystMedicineSalesStatisticsResponse.salesPerDay medicineSalesPerDay(LocalDate date, Long medicine){
-
-         List<MedicineBundle> medicineBundles =
-               orderRepository.findAll().stream()
-                       .filter(order -> order.getDate().isEqual(date))
-                       .flatMap(order -> order.getBundles().stream())
-                       .filter(medicineBundle -> Objects.equals(medicineBundle.getMedicine().getId(), medicine))
-                       .toList();
-
-         return AnalystMedicineSalesStatisticsResponse.salesPerDay.builder()
-                 .count(medicineBundles.size())
-                 .date(date)
-                 .amount(
-                     medicineBundles.stream()
-                             .map(MedicineBundle::getPriceToSell)
-                             .reduce(BigDecimal.ZERO, BigDecimal::add))
-                 .build();
-    }
 
     @Transactional
     public AnalystDistributionSalesMedicineResponse DistributionSalesMedicine(LocalDate start, LocalDate end){
@@ -207,96 +277,78 @@ public class AnalystService {
                                 .stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey, e-> {
                                     Long id = e.getValue().get(0).getId();
-                                    return countSales(id, start, end);
+                                    return salesMedicinesByPeriod(id, start, end).getCount();
                                 }))
                 )
                 .build();
     }
 
 
-    private Integer countSales(Long id, LocalDate start, LocalDate end){
-        return Math.toIntExact(medicineBundleRepository.findAll().stream()
-                .filter(medicineBundle -> Objects.equals(medicineBundle.getMedicine().getId(), id))
-                .filter(medicineBundle -> medicineBundle.getOrder()!=null)
-                .filter(medicineBundle -> medicineBundle.getOrder().getDate().isBefore(end.plusDays(1))&&
-                        start.minusDays(1).isBefore(medicineBundle.getOrder().getDate()))
-                .count());
-    }
-
     @Transactional
-    public AnalystProfitAndLossResponse profitAndLossAnalyse(LocalDate start, LocalDate end){
-        return AnalystProfitAndLossResponse.builder()
-                .profit(orderRepository.findAll().stream()
-                    .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
-                                    start.minusDays(1).isBefore(order.getDate()))
-                            .flatMap(order-> order.getBundles().stream())
-                            .map(MedicineBundle::getPriceToSell)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add))
-                .loss(medicineBundleRepository.findAll().stream()
-                        .filter(medicineBundle -> !medicineBundle.getExpirationDate().isBefore(LocalDate.now()))
-                        .filter(medicineBundle -> medicineBundle.getMedicineBatch().getSupplyDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(medicineBundle.getMedicineBatch().getSupplyDate()))
-                        .map(MedicineBundle::getPricePaidSupplier)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                )
-                .build();
-    }
+    public AnalystProfitAndLossResponse profitAndLossAnalyseByDate(LocalDate date){
+        List<DailyProfitAndLoss> daily  = dailyProfitAndLossRepository.findAll().stream()
+                .filter( l->Objects.equals( l.getDate(),date ))
+                .toList();
 
-    @Transactional
-    public AnalystProfitAndLossResponse profitAndLossBySupplier(LocalDate start, LocalDate end, Long supplier){
         return AnalystProfitAndLossResponse.builder()
-                .profit(orderRepository.findAll().stream()
-                        .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(order.getDate()))
-                        .flatMap(order-> order.getBundles().stream())
-                        .filter(medicineBundle ->
-                                Objects.equals(medicineBundle.getMedicineBatch().getSupplier().getId(), supplier))
-                        .map(MedicineBundle::getPriceToSell)
+                .profit(daily.stream()
+                        .map(DailyProfitAndLoss::getProfit)
                         .reduce(BigDecimal.ZERO, BigDecimal::add))
-                .loss(medicineBundleRepository.findAll().stream()
-                        .filter(medicineBundle -> !medicineBundle.getExpirationDate().isBefore(LocalDate.now()))
-                        .filter(medicineBundle ->
-                                medicineBundle.getMedicineBatch().getSupplyDate().isBefore(end.plusDays(1))&&
-                                start.minusDays(1).isBefore(medicineBundle.getMedicineBatch().getSupplyDate())&&
-                                Objects.equals(medicineBundle.getMedicineBatch().getSupplier().getId(), supplier)
-                        )
-                        .map(MedicineBundle::getPricePaidSupplier)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                )
+                .loss(daily.stream()
+                        .map(DailyProfitAndLoss::getLoss)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
                 .build();
     }
 
-    @Transactional
-    public AnalystStatisticsBySupplierResponse profitAndLossSupplierStatistics(LocalDate start, LocalDate end){
-        List<Supplier> suppliers =
-                supplierRepository.findAll().stream().toList();
-        Map<String, AnalystProfitAndLossResponse> result = new HashMap<String, AnalystProfitAndLossResponse>();
-        for(Supplier supplier: suppliers){
-            result.put(supplier.getName(),
-                    profitAndLossBySupplier(start, end, supplier.getId()));
-        }
-        return AnalystStatisticsBySupplierResponse.builder()
-                .profitAndLoss(result)
-                .build();
 
+    @Transactional
+    public AnalystProfitAndLossResponse profitAndLossAnalyseByPeriod(LocalDate start, LocalDate end){
+        List<DailyProfitAndLoss> daily  = dailyProfitAndLossRepository.findAll().stream()
+                .filter( l->!end.isBefore(l.getDate()) && !l.getDate().isBefore(start))
+                .toList();
+
+        return AnalystProfitAndLossResponse.builder()
+                .profit(daily.stream()
+                        .map(DailyProfitAndLoss::getProfit)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .loss(daily.stream()
+                        .map(DailyProfitAndLoss::getLoss)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .build();
+    }
+
+
+    @Transactional
+    public AnalystProfitAndLossResponse profitAndLossAnalyseByMonth(YearMonth date){
+        List<MonthProfitAndLoss> daily  = monthProfitAndLossRepository.findAll().stream()
+                .filter( l->Objects.equals(l.getDate(), date ))
+                .toList();
+
+        return AnalystProfitAndLossResponse.builder()
+                .profit(daily.stream()
+                        .map(MonthProfitAndLoss::getProfit)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .loss(daily.stream()
+                        .map(MonthProfitAndLoss::getLoss)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .build();
     }
 
     @Transactional
     public AnalystAverageCheckResponse averageCheck(LocalDate start, LocalDate end){
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(order -> order.getDate().isBefore(end.plusDays(1))&&
-                        start.minusDays(1).isBefore(order.getDate()))
-                .toList();
-        BigDecimal amount  = orders.stream()
-                .flatMap(order -> order.getBundles().stream())
-                .map(MedicineBundle::getPriceToSell)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        System.out.println(amount);
+        BigDecimal profit = profitAndLossAnalyseByPeriod(start, end).getProfit();
+        Integer count = dailyCountSalesRepository.findAll().stream()
+                .filter(l-> !end.isBefore(l.getDate()) && !l.getDate().isBefore(start))
+                .map(DailyCountSales::getCount)
+                .reduce(0, Integer::sum);
+        if(count == 0)
+            return AnalystAverageCheckResponse.builder()
+                    .average(BigDecimal.ZERO)
+                    .build();
+
         return AnalystAverageCheckResponse.builder()
-                .average(amount.divide(BigDecimal.valueOf(orders.size()), RoundingMode.HALF_UP))
+                .average(profit.divide(BigDecimal.valueOf(count), RoundingMode.HALF_UP))
                 .build();
     }
-
-
 
 }

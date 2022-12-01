@@ -11,11 +11,11 @@ import java.util.List;
 @Value
 @Builder
 public class AnalystMedicineSalesStatisticsResponse {
-   List<salesPerDay> sales;
+   List<SalesPerDay> sales;
 
    @Value
    @Builder
-   public static class salesPerDay{
+   public static class SalesPerDay {
       LocalDate date;
       Integer count;
       BigDecimal amount;

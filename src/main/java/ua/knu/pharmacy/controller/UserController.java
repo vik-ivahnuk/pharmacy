@@ -2,12 +2,10 @@ package ua.knu.pharmacy.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import ua.knu.pharmacy.dto.request.analyst.AnalystMedicineSalesStatisticsRequest;
 import ua.knu.pharmacy.dto.request.user.UserCreateUserRequest;
 import ua.knu.pharmacy.dto.request.user.UserOrderRequest;
 import ua.knu.pharmacy.dto.request.user.UserReviewRequest;
 import ua.knu.pharmacy.dto.request.user.UserViewHistoryRequest;
-import ua.knu.pharmacy.dto.response.user.UserViewCostsOfMedicinesResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewHistoryResponse;
 import ua.knu.pharmacy.dto.response.user.UserViewProductResponse;
 import ua.knu.pharmacy.service.UserService;
@@ -49,10 +47,4 @@ public class UserController {
     return service.showHistory(start, end, request.getUserId());
   }
 
-  @GetMapping("/statistics/costs of medicines")
-  public UserViewCostsOfMedicinesResponse showCostOfMedicines(@RequestBody UserViewHistoryRequest request) {
-    LocalDate start = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getStart(), LocalDate::from);
-    LocalDate end = DateTimeFormatter.ISO_LOCAL_DATE.parse(request.getEnd(), LocalDate::from);
-    return service.costsOfMedicines(start, end, request.getUserId());
-  }
 }

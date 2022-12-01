@@ -39,4 +39,6 @@ public class DailyReportMedicine {
     @Column(nullable = false)
     private BigDecimal amount;
 
+
+
 }

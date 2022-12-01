@@ -26,5 +26,5 @@ public class Order {
   private LocalDate date;
 
   @OneToMany(mappedBy = "order")
-  private List<MedicineBundle> bundles = new ArrayList<>();
+  private List<OrderedMedicines> orderedMedicines = new ArrayList<>();
 }

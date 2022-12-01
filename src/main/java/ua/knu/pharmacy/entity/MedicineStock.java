@@ -3,6 +3,7 @@ package ua.knu.pharmacy.entity;
 import lombok.*;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 
@@ -33,6 +34,10 @@ public class MedicineStock {
 
     public LocalDate getExpirationDate(){
         return supply.getExpirationDate();
+    }
+
+    public BigDecimal getAmount(){
+        return supply.getPrice().multiply(BigDecimal.valueOf(count));
     }
 
 }

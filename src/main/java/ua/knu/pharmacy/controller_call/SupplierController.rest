@@ -18,16 +18,16 @@ Content-Type: application/json
   "items": [
     {
       "medicineId": 4,
-      "count": 5,
+      "count": 15,
       "manufactureDate": "2021-10-01",
-      "expirationDate": "2022-12-15",
+      "expirationDate": "2022-12-03",
       "pricePaidSupplier": 23
     },
     {
       "medicineId": 1,
-      "count": 10,
+      "count": 12,
       "manufactureDate": "2021-12-16",
-      "expirationDate": "2022-12-15",
+      "expirationDate": "2022-12-10",
       "pricePaidSupplier": 12
     }
 

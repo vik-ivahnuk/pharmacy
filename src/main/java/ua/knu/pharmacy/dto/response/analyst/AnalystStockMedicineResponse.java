@@ -7,7 +7,5 @@ import lombok.Value;
 @Value
 @Builder
 public class AnalystStockMedicineResponse {
-    AnalystSalesMedicineResponse.AnalystPartSalesMedicineResponse stock;
-
-
+    AnalystSalesMedicineResponse stock;
 }
