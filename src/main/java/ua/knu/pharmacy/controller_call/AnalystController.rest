@@ -11,7 +11,7 @@ GET http://localhost:8081/analyst/analyse/supply/sales/date
 Content-Type: application/json
 
 {
-  "date": "2022-12-01",
+  "date": "2022-12-03",
   "supply": 2
 }
 
@@ -21,7 +21,7 @@ Content-Type: application/json
 
 {
   "start": "2022-11-16",
-  "end": "2022-11-27",
+  "end": "2022-12-27",
   "supply": 3
 }
 
@@ -91,7 +91,7 @@ Content-Type: application/json
 
 {
   "start": "2022-11-18",
-  "end": "2022-11-27"
+  "end": "2022-12-05"
 }
 
 ###

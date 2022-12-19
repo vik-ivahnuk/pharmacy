@@ -17,12 +17,12 @@ Content-Type: application/json
   "userId": 1,
   "products": [
     {
-      "id": 4,
-      "count": 6
+      "id": 2,
+      "count": 2
     },
     {
       "id": 1,
-      "count": 11
+      "count": 1
     }
   ]
 }

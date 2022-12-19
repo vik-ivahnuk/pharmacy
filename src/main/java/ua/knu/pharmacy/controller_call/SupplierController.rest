@@ -17,17 +17,17 @@ Content-Type: application/json
   "supplierId": 3,
   "items": [
     {
-      "medicineId": 4,
-      "count": 15,
+      "medicineId": 2,
+      "count": 18,
       "manufactureDate": "2021-10-01",
-      "expirationDate": "2022-12-03",
-      "pricePaidSupplier": 23
+      "expirationDate": "2022-12-16",
+      "pricePaidSupplier": 14
     },
     {
       "medicineId": 1,
       "count": 12,
       "manufactureDate": "2021-12-16",
-      "expirationDate": "2022-12-10",
+      "expirationDate": "2022-12-15",
       "pricePaidSupplier": 12
     }
 
